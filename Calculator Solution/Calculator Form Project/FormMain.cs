@@ -19,13 +19,17 @@ namespace Calculator_Form_Project
             public bool isNumber;
             public bool isDecimalSeparator;
             public bool isPlusMinusSign;
-            public ButtonStruct(char Content, bool isBold, bool isNumber = true, bool isDecimalSeparator = false, bool isPlusMinusSign = false)
+            public bool isOperator;
+            public bool isEqualSign;
+            public ButtonStruct(char Content, bool isBold, bool isNumber = true, bool isDecimalSeparator = false, bool isPlusMinusSign = false,bool isOperator=false,bool isEqualSign=false)
             {
                 this.Content = Content;
                 this.isBold = isBold;
                 this.isNumber = isNumber;
                 this.isDecimalSeparator = isDecimalSeparator;
                 this.isPlusMinusSign = isPlusMinusSign;
+                this.isOperator = isOperator;
+                this.isEqualSign = isEqualSign;
             }
             public override string ToString()
             {
@@ -37,11 +41,11 @@ namespace Calculator_Form_Project
         private ButtonStruct[,] buttons =
         {
             {new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct('C',false),new ButtonStruct('<',false)},
-            {new ButtonStruct(' ',false),new ButtonStruct(' ',false,false),new ButtonStruct(' ',false,false),new ButtonStruct('/',false)},
-            {new ButtonStruct('7',true,true),new ButtonStruct('8',true,true),new ButtonStruct('9',true,true),new ButtonStruct('X',false)},
-            {new ButtonStruct('4',true,true),new ButtonStruct('5',true,true),new ButtonStruct('6',true,true),new ButtonStruct('-',false)},
-            {new ButtonStruct('1',true,true),new ButtonStruct('2',true,true),new ButtonStruct('3',true,true),new ButtonStruct('+',false)},
-            {new ButtonStruct('±',false,false,false,true),new ButtonStruct('0',true),new ButtonStruct('.',false,false,true),new ButtonStruct('=',false,false)},
+            {new ButtonStruct(' ',false),new ButtonStruct('²',false,false),new ButtonStruct(' ',false,false),new ButtonStruct('/',false,false,false,false,true)},
+            {new ButtonStruct('7',true,true),new ButtonStruct('8',true,true),new ButtonStruct('9',true,true),new ButtonStruct('X',false,false,false,false,true)},
+            {new ButtonStruct('4',true,true),new ButtonStruct('5',true,true),new ButtonStruct('6',true,true),new ButtonStruct('-',false,false,false,false,true)},
+            {new ButtonStruct('1',true,true),new ButtonStruct('2',true,true),new ButtonStruct('3',true,true),new ButtonStruct('+',false,false,false,false,true)},
+            {new ButtonStruct('±',false,false,false,true),new ButtonStruct('0',true),new ButtonStruct('.',false,false,true),new ButtonStruct('=',false,false,false,false,false,true)},
 
         };
         public FormMain()
@@ -49,6 +53,11 @@ namespace Calculator_Form_Project
             InitializeComponent();
         }
         private RichTextBox resultBox;
+
+        private const char asci0='\x0000';
+        private double operand1, operand2, result;
+
+        private char lastOperator;
         private void FormMain_Load(object sender, EventArgs e)
         {
             makebuttons(buttons);
@@ -118,6 +127,7 @@ namespace Calculator_Form_Project
 
         private void Button_click(object sender, EventArgs e)
         {
+            
             Button clickedButton = (Button)sender;
             ButtonStruct bs = (ButtonStruct)clickedButton.Tag;
             if ((resultBox.Text == "0")&&(bs.isDecimalSeparator==false))
@@ -147,16 +157,21 @@ namespace Calculator_Form_Project
                     switch (bs.Content)
                     {
                         case 'C':
+                            operand1 = 0;
+                            operand2 = 0;
+                            result = 0;
+                            lastOperator = asci0;
                             resultBox.Text = "0";
                             break;
                         case '<':
-                            resultBox.Text = resultBox.Text.Remove(resultBox.Text.Length-1);
-                            if ((resultBox.Text.Length==0)||(resultBox.Text=="-0")|| (resultBox.Text == "-"))
+                            resultBox.Text = resultBox.Text.Remove(resultBox.Text.Length - 1);
+                            if ((resultBox.Text.Length == 0) || (resultBox.Text == "-0") || (resultBox.Text == "-"))
                             {
                                 resultBox.Text = "0";
                             }
                             break;
                         default:
+                            manageOperator(bs);
                             break;
 
 
@@ -165,6 +180,40 @@ namespace Calculator_Form_Project
                 }
             }
             
+        }
+
+        private void manageOperator(ButtonStruct bs)
+        {
+            if (lastOperator == asci0)
+                operand1 = bs.Content;
+            else
+            {
+                switch (lastOperator)
+                {
+                    case '+':
+                        result = operand1 + operand2;
+                        break;
+                    case '-':
+                        result = operand1 - operand2;
+                        break;
+                    case 'X':
+                        result = operand1 * operand2;
+                        break;
+                    case '/':
+                        result = operand1 / operand2;
+                        break;
+                    default:
+                        break;
+
+
+                }
+                MessageBox.Show(result.ToString());
+                lastOperator = bs.Content;
+                operand1 = result;
+                operand2 = 0;
+                resultBox.Text = result.ToString();
+
+            }
         }
     }
 }
