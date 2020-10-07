@@ -1,6 +1,6 @@
-﻿namespace Calculator_Form_Project
+﻿namespace calculatorFormPrj
 {
-    partial class FormMain
+    partial class formMain
     {
         /// <summary>
         /// Variabile di progettazione necessaria.
@@ -30,14 +30,15 @@
         {
             this.SuspendLayout();
             // 
-            // FormMain
+            // formMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(328, 471);
-            this.Name = "FormMain";
-            this.Text = "FormMain";
-            this.Load += new System.EventHandler(this.FormMain_Load);
+            this.ClientSize = new System.Drawing.Size(329, 461);
+            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Name = "formMain";
+            this.Text = "Calcolatrice";
+            this.Load += new System.EventHandler(this.formMain_Load);
             this.ResumeLayout(false);
 
         }
