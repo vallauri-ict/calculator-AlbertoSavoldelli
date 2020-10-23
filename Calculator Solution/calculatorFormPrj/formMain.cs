@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace calculatorFormPrj
@@ -15,8 +16,9 @@ namespace calculatorFormPrj
             public bool IsPlusMinusSign;
             public bool IsOperator;
             public bool IsEqualSign;
+            public bool IsSpecialOperator;//per gestire operazioni che possono avere singolo operatore
 
-            public ButtonStruct(char content, bool isBold, bool isNumber = false, bool isDecimalSeparator = false, bool isPlusMinusSign = false, bool isOperator = false,bool isEqualSign=false)
+            public ButtonStruct(char content, bool isBold, bool isNumber = false, bool isDecimalSeparator = false, bool isPlusMinusSign = false, bool isOperator = false, bool isEqualSign = false, bool isSpecialOperator = false)
             {
                 this.Content = content;
                 this.IsBold = isBold;
@@ -25,6 +27,7 @@ namespace calculatorFormPrj
                 this.IsPlusMinusSign = isPlusMinusSign;
                 this.IsOperator = isOperator;
                 this.IsEqualSign = isEqualSign;
+                this.IsSpecialOperator = isSpecialOperator;
             }
             //per noi oggetto .tostring fa gia rappresentazione stringa del content
             public override string ToString()
@@ -36,7 +39,7 @@ namespace calculatorFormPrj
         private ButtonStruct[,] buttons =
         {
             {new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct('C',false),new ButtonStruct('<',false)},
-            {new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct('/',false,false,false,false,true)},
+            {new ButtonStruct('¼',false,false,false,false,true,false,true),new ButtonStruct('²',false,false,false,false,true,false,true),new ButtonStruct('√',false,false,false,false,true,false,true),new ButtonStruct('/',false,false,false,false,true)},
             {new ButtonStruct('7',true,true),new ButtonStruct('8',true,true),new ButtonStruct('9',true,true),new ButtonStruct('x',false,false,false,false,true)},
             {new ButtonStruct('4',true,true),new ButtonStruct('5',true,true),new ButtonStruct('6',true,true),new ButtonStruct('-',false,false,false,false,true)},
             {new ButtonStruct('1',true,true),new ButtonStruct('2',true,true),new ButtonStruct('3',true,true),new ButtonStruct('+',false,false,false,false,true)},
@@ -44,6 +47,8 @@ namespace calculatorFormPrj
         };
 
         private RichTextBox resultBox;
+        private Font baseFont = new Font("Segoe UI", 22, FontStyle.Bold);//font di default
+
 
         private const char ASCIIZERO = '\x0000';
         private double operand1, operand2, result;
@@ -66,7 +71,7 @@ namespace calculatorFormPrj
         private void MakeResultBox()
         {
             resultBox = new RichTextBox();
-            resultBox.Font = new Font("Segoe UI", 22);
+            resultBox.Font = baseFont;
             resultBox.SelectionAlignment = HorizontalAlignment.Right;
             resultBox.Width = this.Width - 16;
             resultBox.Height = 50;
@@ -81,11 +86,15 @@ namespace calculatorFormPrj
 
         private void ResultBox_TextChanged(object sender, EventArgs e)
         {
-            int newSize = 22 + (15 - resultBox.Text.Length);
-            if (newSize > 8 && newSize < 23)
+
+            int delta = 17 - resultBox.Text.Length;
+            if (delta % 2 == 0)
             {
-                int delta = 15 - resultBox.Text.Length;
-                resultBox.Font = new Font("Segoe UI", newSize);
+                float newSize = baseFont.Size + delta;
+                if (newSize > 8 && newSize < 23)
+                {
+                    resultBox.Font = new Font(baseFont.FontFamily, newSize, FontStyle.Bold);
+                }
             }
         }
 
@@ -139,7 +148,10 @@ namespace calculatorFormPrj
                 {
                     resultBox.Text = "";
                 }
-                resultBox.Text += clickedButton.Text;
+                if (resultBox.Text.Length < 20)
+                {
+                    resultBox.Text += clickedButton.Text;
+                }
             }
             else
             {
@@ -150,7 +162,7 @@ namespace calculatorFormPrj
                         resultBox.Text += clickedButton.Text;
                     }
                 }
-                if (bs.IsPlusMinusSign&&resultBox.Text!="0")//-0 non esiste
+                if (bs.IsPlusMinusSign && resultBox.Text != "0")//-0 non esiste
                 {
                     if (!resultBox.Text.Contains("-"))
                     {
@@ -191,17 +203,61 @@ namespace calculatorFormPrj
 
         }
 
-        private void clearAll(double numberToWrite=0)
+        private void clearAll(double numberToWrite = 0)
         {
             operand1 = 0;
             operand2 = 0;
             result = 0;
             lastOperator = ASCIIZERO;
-            resultBox.Text = numberToWrite.ToString();
+            resultBox.Text = getFormattedNumber(numberToWrite);
         }
 
         private void manageOperators(ButtonStruct bs)
         {
+            //mettere prima di switch per ordine operazioni
+            if (bs.IsSpecialOperator)
+            {
+                switch (bs.Content)
+                {
+                    case '¼':
+                        if (lastOperator != ASCIIZERO)
+                        {
+                            operand2 = 1 / (Convert.ToDouble(resultBox.Text));
+                            resultBox.Text = getFormattedNumber(operand2);
+                        }
+                        else
+                        {
+                            result = 1 / (Convert.ToDouble(resultBox.Text));
+                            resultBox.Text = getFormattedNumber(result);
+                        }
+                        break;
+                    case '√':
+                        if (lastOperator != ASCIIZERO)
+                        {
+                            operand2 = Math.Sqrt(Convert.ToDouble(resultBox.Text));
+                            resultBox.Text = getFormattedNumber(operand2);
+                        }
+                        else
+                        {
+                            result = Math.Sqrt(Convert.ToDouble(resultBox.Text));
+                            resultBox.Text = getFormattedNumber(result);
+                        }
+                        break;
+                    case '²':
+                        if (lastOperator != ASCIIZERO)
+                        {
+                            operand2 = Math.Pow(Convert.ToDouble(resultBox.Text), 2);
+                            resultBox.Text = getFormattedNumber(operand2);
+                        }
+                        else
+                        {
+                            result = Math.Pow(Convert.ToDouble(resultBox.Text), 2);
+                            resultBox.Text = getFormattedNumber(result);
+                        }
+                        break;
+
+                }
+            }
             if (lastOperator == ASCIIZERO)//valore di default
             {
                 operand1 = double.Parse(resultBox.Text);
@@ -209,16 +265,19 @@ namespace calculatorFormPrj
             }
             else
             {
-                if (lastButtonClicked.IsOperator&&!lastButtonClicked.IsEqualSign)
+
+                if (lastButtonClicked.IsOperator && !lastButtonClicked.IsEqualSign)
                 {
                     lastOperator = bs.Content;
                 }
                 else
                 {
-                    if (!lastButtonClicked.IsEqualSign)
+                    //if (!lastButtonClicked.IsEqualSign&&bs.Content!= '¼'&&bs.Content!= '√')
+                    if (!lastButtonClicked.IsEqualSign && bs.Content != '¼' && !bs.IsSpecialOperator)
                     {
                         operand2 = double.Parse(resultBox.Text);
                     }
+
                     switch (lastOperator)
                     {
                         case '+':
@@ -233,6 +292,9 @@ namespace calculatorFormPrj
                         case '/':
                             result = operand1 / operand2;
                             break;
+                        /*case '¼':
+                            result = 1 / result;//TODO: gestire casi particolar
+                            break;*/
                         default:
                             break;
                     }
@@ -241,10 +303,21 @@ namespace calculatorFormPrj
                     {
                         lastOperator = bs.Content;
                         operand2 = 0;
-                    } 
-                    resultBox.Text = result.ToString();
+                    }
+                    else
+                    {
+                        lastOperator = ASCIIZERO;
+                    }
+                    resultBox.Text = getFormattedNumber(result);
                 }
             }
+
+        }
+        private string getFormattedNumber(double number)
+        {
+            //return String.Format ("{0:0,0.0000000000000000}");
+            char decimalSeparator = Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator[0];
+            return number.ToString("N16").TrimEnd('0').TrimEnd(decimalSeparator);
         }
     }
 }
